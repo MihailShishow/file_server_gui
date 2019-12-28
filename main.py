@@ -1,6 +1,6 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import tkinter.ttk as ttk
 import os
 from threading import Thread
@@ -82,16 +82,17 @@ class Application(ttk.Frame):
             self.port = 0
 
     def event_start_server(self, event):
-        os.chdir(self.directory)
-        self.server = HTTPServer(
-            ('0.0.0.0', self.port), SimpleHTTPRequestHandler)
-        self.thread = Thread(target=self.server.serve_forever)
-        self.thread.start()
-        print('STARTED')
+        try:
+            os.chdir(self.directory)
+            self.server = HTTPServer(
+                ('0.0.0.0', self.port), SimpleHTTPRequestHandler)
+            self.thread = Thread(target=self.server.serve_forever)
+            self.thread.start()
+        except FileNotFoundError:
+            messagebox.showerror("Error", "Directory does not exist.")
 
         self.server_toggle_btn["text"] = 'Stop Server'
         self.server_toggle_btn.bind("<Button-1>", self.event_terminate_server)
-        print('BOUND')
 
     def event_terminate_server(self, event):
         self.server.shutdown()
