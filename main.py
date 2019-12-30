@@ -13,9 +13,9 @@ class Application(ttk.Frame):
         self.master = master
         self.pack()
         self.directory = ''
-        self.port = 0
+        self.port = 1024
         self.port_str = tk.StringVar()
-        self.port_str.set('')
+        self.port_str.set(str(self.port))
         self.server = None
         self.thread = None
         self.create_widgets()
@@ -26,7 +26,7 @@ class Application(ttk.Frame):
             if not input_str.isdigit():
                 return False
             else:
-                if int(input_str) >= 65536:
+                if (int(input_str) >= 65536) and (int(input_str) <= 1023):
                     return False
         return True
 
@@ -53,6 +53,16 @@ class Application(ttk.Frame):
             12, 12), pady=(12, 12), sticky='nesw')
         self.address_lbl.grid(row=3, column=0, columnspan=2, padx=(
             10, 10), pady=(10, 10), sticky='nesw')
+
+    def disable_controls(self):
+        self.dir_select_btn['state'] = 'disabled'
+        self.dir_select_btn.unbind('<Button-1>')
+        self.port_edit['state'] = 'disabled'
+
+    def enable_controls(self):
+        self.dir_select_btn['state'] = 'normal'
+        self.dir_select_btn.bind("<Button-1>", self.event_select_dir)
+        self.port_edit['state'] = 'normal'
 
     def bind_events(self):
         self.dir_select_btn.bind("<Button-1>", self.event_select_dir)
@@ -88,17 +98,23 @@ class Application(ttk.Frame):
                 ('0.0.0.0', self.port), SimpleHTTPRequestHandler)
             self.thread = Thread(target=self.server.serve_forever)
             self.thread.start()
+            self.server_toggle_btn["text"] = 'Stop Server'
+            self.server_toggle_btn.bind("<Button-1>", self.event_terminate_server)
+            self.disable_controls()
         except FileNotFoundError:
             messagebox.showerror("Error", "Directory does not exist.")
+        except PermissionError:
+            messagebox.showerror("Error", "Permission denied by operating system. Try to select another directory and/or port or restart the program with administrator privileges.")
 
-        self.server_toggle_btn["text"] = 'Stop Server'
-        self.server_toggle_btn.bind("<Button-1>", self.event_terminate_server)
+        
 
     def event_terminate_server(self, event):
         self.server.shutdown()
         self.thread.join()
+        self.server = None
         self.server_toggle_btn["text"] = 'Start Server'
         self.server_toggle_btn.bind("<Button-1>", self.event_start_server)
+        self.enable_controls()
 
 if __name__ == "__main__":
     root = tk.Tk()
